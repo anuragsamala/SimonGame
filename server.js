@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 
 const app = express();
-const PORT = 4545;
+const PORT = process.env.PORT || 4545;
 const SECRET_KEY = 'super_secret_jwt_key_for_simon_game';
 
 app.use(express.json());
