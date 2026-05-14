@@ -23,6 +23,11 @@
   
   <button onclick="logout()" style="position: absolute; top: 20px; right: 20px; padding: 10px 15px; background: #ff4d4d; color: white; border: none; border-radius: 5px; cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 0.7rem;">Logout</button>
 
+  <div id="previous-scores" style="position: absolute; top: 20px; left: 20px; color: white; font-family: 'Press Start 2P', cursive; font-size: 0.6rem; text-align: left; background: rgba(0,0,0,0.5); padding: 15px; border-radius: 8px;">
+    <h3 style="margin-top:0; margin-bottom: 10px; color: #17b978;">Last 3 Scores</h3>
+    <ul id="score-list" style="list-style: none; padding: 0; margin: 0; line-height: 1.5;">Loading...</ul>
+  </div>
+
   <h1 id="level-title">Press A Key to Start</h1>
   <div class="container">
     <div class="row">
@@ -52,7 +57,7 @@
   
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     // TODO: REPLACE THIS WITH YOUR FIREBASE CONFIG
     const firebaseConfig = {
@@ -75,6 +80,52 @@
       console.error("Firebase config is missing or invalid. Please update it.", e);
     }
 
+    async function fetchScores() {
+      if (!db) return;
+      const token = localStorage.getItem('token');
+      let username = "Anonymous";
+      if(token) {
+         const payload = JSON.parse(atob(token.split('.')[1]));
+         username = payload.username;
+      }
+      
+      try {
+        const q = query(collection(db, "scores"), where("username", "==", username));
+        const querySnapshot = await getDocs(q);
+        
+        let scores = [];
+        querySnapshot.forEach((doc) => {
+          scores.push(doc.data());
+        });
+        
+        // Sort by timestamp descending
+        scores.sort((a, b) => b.timestamp.seconds - a.timestamp.seconds);
+        // Get top 3
+        scores = scores.slice(0, 3);
+        
+        const scoreList = document.getElementById("score-list");
+        scoreList.innerHTML = "";
+        
+        if (scores.length === 0) {
+          scoreList.innerHTML = "<li>No scores yet</li>";
+          return;
+        }
+
+        scores.forEach((data) => {
+          const li = document.createElement("li");
+          li.style.marginBottom = "8px";
+          li.textContent = "Level " + data.score;
+          scoreList.appendChild(li);
+        });
+      } catch(e) {
+        console.error("Error fetching scores:", e);
+        document.getElementById("score-list").innerHTML = "<li>Error loading</li>";
+      }
+    }
+
+    // Fetch scores on page load
+    fetchScores();
+
     window.saveScoreToFirebase = async function(score) {
       if (!db) {
         console.error("Cannot save score: Firebase is not configured properly.");
@@ -94,6 +145,9 @@
           timestamp: new Date()
         });
         console.log("Score " + score + " saved to Firebase successfully!");
+        
+        // Refresh the scores list
+        fetchScores();
       } catch (e) {
         console.error("Error saving score: ", e);
       }
