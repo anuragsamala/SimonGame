@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+
+<head>
+  <meta charset="utf-8">
+  <title>Simon</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css?family=Press+Start+2P" rel="stylesheet">
+  
+</head>
+
+<body>
+  <script>
+    if (!localStorage.getItem('token')) {
+      window.location.href = '/auth.html';
+    }
+    
+    function logout() {
+      localStorage.removeItem('token');
+      window.location.href = '/auth.html';
+    }
+  </script>
+  
+  <button onclick="logout()" style="position: absolute; top: 20px; right: 20px; padding: 10px 15px; background: #ff4d4d; color: white; border: none; border-radius: 5px; cursor: pointer; font-family: 'Press Start 2P', cursive; font-size: 0.7rem;">Logout</button>
+
+  <h1 id="level-title">Press A Key to Start</h1>
+  <div class="container">
+    <div class="row">
+
+      <div type="button" id="green" class="btn green ">
+
+      </div>
+
+      <div type="button" id="red" class="btn red">
+
+      </div>
+    </div>
+
+    <div class="row">
+
+      <div type="button" id="yellow" class="btn yellow ">
+
+      </div>
+      <div type="button" id="blue" class="btn blue ">
+
+      </div>
+
+    </div>
+
+  </div>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    // TODO: REPLACE THIS WITH YOUR FIREBASE CONFIG
+    const firebaseConfig = {
+      apiKey: "AIzaSyDg-6QGU6jEmkVXYBNbcsCs0J8o4zzTqng",
+      authDomain: "anurag-d943e.firebaseapp.com",
+      databaseURL: "https://anurag-d943e-default-rtdb.firebaseio.com",
+      projectId: "anurag-d943e",
+      storageBucket: "anurag-d943e.firebasestorage.app",
+      messagingSenderId: "732345549102",
+      appId: "1:732345549102:web:bc495d827e77b7dbfd3abf",
+      measurementId: "G-T2TEW6DEWY"
+    };
+
+    let db;
+    try {
+      const app = initializeApp(firebaseConfig);
+      db = getFirestore(app);
+      console.log("Firebase initialized successfully");
+    } catch (e) {
+      console.error("Firebase config is missing or invalid. Please update it.", e);
+    }
+
+    window.saveScoreToFirebase = async function(score) {
+      if (!db) {
+        console.error("Cannot save score: Firebase is not configured properly.");
+        return;
+      }
+      try {
+        const token = localStorage.getItem('token');
+        let username = "Anonymous";
+        if(token) {
+           const payload = JSON.parse(atob(token.split('.')[1]));
+           username = payload.username;
+        }
+        
+        await addDoc(collection(db, "scores"), {
+          username: username,
+          score: score,
+          timestamp: new Date()
+        });
+        console.log("Score " + score + " saved to Firebase successfully!");
+      } catch (e) {
+        console.error("Error saving score: ", e);
+      }
+    }
+  </script>
+
+<script src="./game.js"></script>
+</body>
+
+</html>
